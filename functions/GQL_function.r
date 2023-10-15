@@ -35,3 +35,4 @@ GQL <- function(query,
   }
   res$data
 }
+

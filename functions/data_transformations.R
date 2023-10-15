@@ -2,6 +2,7 @@ library(dplyr)
 library(purrr)
 library(tidyr)
 library(lubridate)
+library(jsonlite)
 
 # Function to transfrm metadata to a readable dataframe
 transform_metadata_to_df <- function(metadata) {
@@ -43,6 +44,34 @@ to_iso8601 <- function(datetime, offset_days) {
 source('functions/data_transformations.r')
 
 to_iso8601("2016-09-01 10:11:12", -4)
+
+
+
+transform_volumes <- function(json_data) {
+  # Extract the 'edges' list which contains the data
+  edges <- json_data$trafficData$volume$byHour$edges
+  
+  # 'map_dfr' iterates over the 'edges' list and 
+  #applies the function to each element and row-binding the results
+  df <- map_dfr(edges, function(edge) {
+    data <- edge$node  # 'node' contains the relevant data
+    tibble(  # creating a tibble with the data
+      from = data$from,
+      to = data$to,
+      volume = data$total$volumeNumbers$volume
+    )
+  })
+  
+  # Transforming the 'from' column to POSIXct date-time objects
+  tidy_df <- df %>%
+    # adjusting the format if the date-time strings are in a different format
+    mutate(from = as.POSIXct(from, format = "%Y-%m-%dT%H:%M:%S", tz = "GMT"))  
+  
+  # Return the tidy data frame
+  return(tidy_df)
+}
+
+
 
 
 
