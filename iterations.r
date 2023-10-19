@@ -59,10 +59,46 @@ stations_metadata_df %>%
     to = to_iso8601(latestData, 0)
   ) %>% 
   GQL(., .url = configs$vegvesen_url) %>%
-  transform_volumes() %>% 
+  transform_volumes() %>%
   ggplot(aes(x=from, y=volume)) + 
   geom_line() + 
   theme_classic()
+
+#TASK 6 - Rewriting the code above to include legend with the name of station
+
+stations_metadata_df %>% 
+  filter(latestData > Sys.Date() - days(7)) %>% 
+  sample_n(1) %>%
+  # Creating a new column, a list containing the results of the query
+  mutate(
+    volume_data = list(
+      vol_qry(
+        id = .$id,
+        from = to_iso8601(.$latestData, -4),
+        to = to_iso8601(.$latestData, 0)
+      ) %>% 
+        GQL(., .url = configs$vegvesen_url) %>%
+        transform_volumes()
+    )
+  ) %>%
+  # Using unnest to flatten the list-column into a ggplot format
+  unnest(volume_data) %>%
+  # Creating a ned column with the name of the station
+  mutate(station = first(.$name)) %>% 
+  # Making the plot
+  ggplot(aes(x = from, y = volume, colour = station)) + 
+  geom_line() +
+  labs(colour = "Traffic Station", y = "Volume", x = "From",
+       title = "Hourly volume") +
+  theme_classic()
+
+
+  
+
+
+
+
+
 
 
 
